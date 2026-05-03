@@ -5,7 +5,7 @@ import java.io.File;
 import org.opencv.core.*;
 @Service
 public class IrisService {
-    private static final String DATASET_PATH = "C:/Users/VANITHA/Desktop/irisapi/dataset";
+    private static final String DATASET_PATH = "dataset/";
     public String matchIris(String inputPath) {
 
         File folder = new File(DATASET_PATH);
