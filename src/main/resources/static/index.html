@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Iris Attendance System</title>
+
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f0f2f5;
+            text-align: center;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 50px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .logout {
+            background: red;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Iris Attendance System</h1>
+
+<div class="container">
+    <video id="video" autoplay style="display:none;"></video>
+
+    <canvas id="zoomCanvas" width="400" height="300"></canvas>
+    <br>
+
+    <button onclick="captureMultiple()">Capture Attendance</button>
+    <button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<script>
+    /* 🔐 LOGIN PROTECTION */
+    if (localStorage.getItem("loggedIn") !== "true") {
+        window.location.href = "login.html";
+    }
+
+    /* 🎥 SETUP */
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('zoomCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /* 🔥 MEDIAPIPE SETUP */
+    const faceMesh = new FaceMesh({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }
+    });
+
+    faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+
+    /* 👁️ DETECT RIGHT EYE IRIS */
+    faceMesh.onResults((results) => {
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (results.multiFaceLandmarks.length > 0) {
+
+            const landmarks = results.multiFaceLandmarks[0];
+
+            // 🔥 RIGHT EYE IRIS
+            const irisPoints = [469, 470, 471, 472];
+
+            let minX = 9999, minY = 9999;
+            let maxX = 0, maxY = 0;
+
+            irisPoints.forEach(i => {
+                const x = landmarks[i].x * canvas.width;
+                const y = landmarks[i].y * canvas.height;
+
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            });
+
+            const padding = 20;
+
+            const x = minX - padding;
+            const y = minY - padding;
+            const w = (maxX - minX) + padding * 2;
+            const h = (maxY - minY) + padding * 2;
+
+            ctx.drawImage(
+                video,
+                x, y, w, h,
+                0, 0, canvas.width, canvas.height
+            );
+
+            // 🔴 border
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        }
+    });
+
+    /* 🎥 START CAMERA */
+    const camera = new Camera(video, {
+        onFrame: async () => {
+            await faceMesh.send({ image: video });
+        },
+        width: 400,
+        height: 300
+    });
+
+    camera.start();
+
+    /* 📸 CAPTURE FUNCTION */
+    async function captureMultiple() {
+
+        const results = {};
+
+        for (let i = 0; i < 5; i++) {
+
+            const blob = await new Promise(resolve =>
+                canvas.toBlob(resolve, 'image/jpeg')
+            );
+
+            const formData = new FormData();
+            formData.append("file", blob, "iris.jpg");
+
+            const res = await fetch("/attendance/mark", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+            console.log("Frame result:", data);
+
+            if (data.userId) {
+                results[data.userId] = {
+                   count: (results[data.userId]?.count || 0) + 1,
+                   name: data.name
+                };
+            }
+
+            await new Promise(r => setTimeout(r, 300));
+        }
+
+        let bestUser = null;
+        let maxCount = 0;
+
+        let bestName = null;
+
+        for (let user in results) {
+            if (results[user].count > maxCount) {
+                maxCount = results[user].count;
+                bestUser = user;
+                bestName = results[user].name;
+            }
+        }
+
+        if (bestUser && maxCount >= 3) {
+             alert("Attendance Marked for: " + bestName);
+        } else {
+             alert("User not recognized");
+        }
+    }
+
+    /* 🚪 LOGOUT */
+    function logout() {
+        localStorage.removeItem("loggedIn");
+        window.location.href = "login.html";
+    }
+</script>
+
+</body>
+</html>

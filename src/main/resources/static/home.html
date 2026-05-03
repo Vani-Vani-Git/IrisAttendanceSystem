@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: #f0f2f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            margin-top: 100px;
+            display: inline-block;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 15px 30px;
+            margin: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Iris Attendance Dashboard</h1>
+
+<div class="card">
+    <button onclick="goToAdd()">➕ Add Student</button>
+    <button onclick="goToAttendance()">📷 Take Attendance</button>
+</div>
+
+<script>
+    if (localStorage.getItem("loggedIn") !== "true") {
+        window.location.href = "login.html";
+    }
+
+    function goToAdd() {
+        window.location.href = "add-student.html";
+    }
+
+    function goToAttendance() {
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>
