@@ -1,5 +1,7 @@
 package com.vani.irisapi.controller;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.vani.irisapi.entity.Student;
 import com.vani.irisapi.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/student")
 public class StudentController {
+    @Autowired
+    private Cloudinary cloudinary;
     @Autowired
     private StudentRepository studentRepository;
     @PostMapping("/save")
@@ -35,7 +39,8 @@ public class StudentController {
 
         String path = folder + studentId + "_" + count + ".jpeg";
 
-        file.transferTo(new File(path));
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+        String imageUrl = uploadResult.get("url").toString();
         // 🔥 Save student in DB
         Student student = new Student();
         student.setId(studentId);
