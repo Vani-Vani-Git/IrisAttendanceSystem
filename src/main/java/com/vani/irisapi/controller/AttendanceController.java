@@ -24,7 +24,8 @@ public class AttendanceController {
     @PostMapping("/mark")
     public Map<String, Object> verify(@RequestParam("file") MultipartFile file) throws Exception {
 
-        String path = "C:/Users/VANITHA/Desktop/irisapi/temp.jpeg";
+        String path = System.getProperty("java.io.tmpdir")
+                + "/temp_" + System.currentTimeMillis() + ".jpeg";
         File tempFile = new File(path);
 
         file.transferTo(tempFile);

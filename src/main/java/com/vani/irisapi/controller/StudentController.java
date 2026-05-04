@@ -24,7 +24,7 @@ public class StudentController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("studentName") String studentName,
             @RequestParam("studentId") String studentId) throws Exception {
-        String folder = "C:/Users/VANITHA/Desktop/irisapi/dataset/";
+        String folder = "dataset/";
 
         File dir = new File(folder);
         if (!dir.exists()) dir.mkdirs();
