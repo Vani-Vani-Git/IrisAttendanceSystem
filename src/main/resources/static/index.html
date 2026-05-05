@@ -140,35 +140,39 @@
 
     /* 📸 CAPTURE FUNCTION */
     async function captureMultiple() {
-
         const results = {};
+let totalFrames = 8;
 
-        for (let i = 0; i < 5; i++) {
+for (let i = 0; i < totalFrames; i++) {
 
-            const blob = await new Promise(resolve =>
-                canvas.toBlob(resolve, 'image/jpeg')
-            );
+    // 🔥 GET IMAGE FROM CANVAS
+    const blob = await new Promise(resolve =>
+        zoomCanvas.toBlob(resolve, 'image/jpeg')
+    );
 
-            const formData = new FormData();
-            formData.append("file", blob, "iris.jpg");
+    const formData = new FormData();
+    formData.append("file", blob, "iris.jpg");
 
-            const res = await fetch("/attendance/mark", {
-                method: "POST",
-                body: formData
-            });
+    // 🔥 THIS WAS MISSING
+    const res = await fetch("/attendance/mark", {
+        method: "POST",
+        body: formData
+    });
 
-            const data = await res.json();
-            console.log("Frame result:", data);
+    const data = await res.json();
 
-            if (data.userId) {
-                results[data.userId] = {
-                   count: (results[data.userId]?.count || 0) + 1,
-                   name: data.name
-                };
-            }
+    console.log("Frame result:", data);
 
-            await new Promise(r => setTimeout(r, 300));
+    // 🔥 count valid matches
+    if (data.userId && data.name) {
+        if (!results[data.userId]) {
+            results[data.userId] = { count: 0, name: data.name };
         }
+        results[data.userId].count++;
+    }
+
+    await new Promise(r => setTimeout(r, 300));
+}
 
         let bestUser = null;
         let maxCount = 0;
@@ -184,13 +188,20 @@
         }
 
         if (bestUser && maxCount >= 3) {
-             alert("Attendance Marked for: " + bestName);
-        } else {
-             alert("User not recognized");
-        }
-    }
 
-    /* 🚪 LOGOUT */
+            const res = await fetch("/attendance/confirm?userId=" + bestUser, {
+            method: "POST"
+            });
+
+            const data = await res.json();
+
+            alert(data.message + " for " + bestName);
+
+            } else {
+                alert("User not recognized");
+            }
+        }
+
     function logout() {
         localStorage.removeItem("loggedIn");
         window.location.href = "login.html";

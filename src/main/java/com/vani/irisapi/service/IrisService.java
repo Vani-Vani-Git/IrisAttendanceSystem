@@ -29,9 +29,12 @@ public class IrisService {
         System.out.println("Best Match: " + bestMatch);
         System.out.println("Best Score: " + bestScore);
         System.out.println("Second Best: " + secondBest);
-        if (bestScore < 12 && (secondBest - bestScore) > 1.0) {
+        double gap = secondBest - bestScore;
+
+        if (bestScore < 5600 && gap > 300) {
             return bestMatch;
+        } else {
+            return null;
         }
-        return null;
     }
 }

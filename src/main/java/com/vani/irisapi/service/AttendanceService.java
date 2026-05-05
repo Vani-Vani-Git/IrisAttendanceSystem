@@ -15,17 +15,24 @@ public class AttendanceService {
     private AttendanceRepository attendanceRepository;
     public String markAttendance(String studentId) {
 
+        // 🔥 CLEAN ID HERE (IMPORTANT)
+        String cleanId = studentId.split("_")[0];
+
         LocalDate today = LocalDate.now();
 
+        // 🔥 USE cleanId for checking
         Optional<Attendance> existing =
-                attendanceRepository.findByStudentIdAndDate(studentId, today);
+                attendanceRepository.findByStudentIdAndDate(cleanId, today);
 
         if (existing.isPresent()) {
             return "Already Marked";
         }
 
         Attendance attendance = new Attendance();
-        attendance.setStudentId(studentId);
+
+        // 🔥 USE cleanId for saving
+        attendance.setStudentId(cleanId);
+
         attendance.setDate(today);
         attendance.setStatus("Present");
 

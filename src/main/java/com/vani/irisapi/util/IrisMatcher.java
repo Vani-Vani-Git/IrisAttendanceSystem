@@ -16,32 +16,13 @@ public class IrisMatcher {
             return Double.MAX_VALUE;
         }
 
-        // 🔥 Histogram comparison
-        Mat hist1 = new Mat();
-        Mat hist2 = new Mat();
+        Imgproc.equalizeHist(img1, img1);
+        Imgproc.equalizeHist(img2, img2);
 
-        Imgproc.calcHist(
-                java.util.Collections.singletonList(img1),
-                new MatOfInt(0),
-                new Mat(),
-                hist1,
-                new MatOfInt(256),
-                new MatOfFloat(0, 256)
-        );
+        Imgproc.GaussianBlur(img1, img1, new Size(5,5), 0);
+        Imgproc.GaussianBlur(img2, img2, new Size(5,5), 0);
 
-        Imgproc.calcHist(
-                java.util.Collections.singletonList(img2),
-                new MatOfInt(0),
-                new Mat(),
-                hist2,
-                new MatOfInt(256),
-                new MatOfFloat(0, 256)
-        );
-
-        Core.normalize(hist1, hist1);
-        Core.normalize(hist2, hist2);
-
-        double score = Imgproc.compareHist(hist1, hist2, Imgproc.CV_COMP_CHISQR);
+        double score = Core.norm(img1, img2, Core.NORM_L2);
 
         return score;
     }

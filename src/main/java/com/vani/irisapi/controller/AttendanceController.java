@@ -26,38 +26,48 @@ public class AttendanceController {
 
         String path = System.getProperty("java.io.tmpdir")
                 + "/temp_" + System.currentTimeMillis() + ".jpeg";
+
         File tempFile = new File(path);
-
         file.transferTo(tempFile);
-
-        System.out.println("Saved at: " + tempFile.getAbsolutePath());
-        System.out.println("File exists: " + tempFile.exists());
 
         String userId = irisService.matchIris(path);
 
         Map<String, Object> response = new HashMap<>();
+
         if (userId != null) {
-            String result = attendanceService.markAttendance(userId);
-            String cleanId = userId.split("_")[0]; // remove _1, _2
+
+            String cleanId = userId.split("_")[0];
 
             Student student = studentRepository.findById(cleanId).orElse(null);
 
             if (student != null) {
                 response.put("userId", cleanId);
                 response.put("name", student.getName());
+                response.put("message", "MATCHED");
             } else {
-                response.put("userId", cleanId);
+                response.put("message", "User not found");
             }
 
-            if (result.equals("Marked")) {
-                response.put("message", "Attendance Marked");
-            } else {
-                response.put("message", "Already Marked Today");
-            }
         } else {
             response.put("message", "User not recognized");
         }
+
         tempFile.delete();
+        return response;
+    }
+    @PostMapping("/confirm")
+    public Map<String, String> confirmAttendance(@RequestParam String userId) {
+
+        String result = attendanceService.markAttendance(userId);
+
+        Map<String, String> response = new HashMap<>();
+
+        if ("Marked".equals(result)) {
+            response.put("message", "Attendance Marked");
+        } else {
+            response.put("message", "Already Marked Today");
+        }
+
         return response;
     }
     @GetMapping("/student/{id}")
