@@ -1,57 +1,586 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dashboard</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iris Attendance Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
     <style>
-        body {
-            font-family: Arial;
-            text-align: center;
-            background: #f0f2f5;
+        :root {
+          --bg: #0B121F;
+          --panel: #111B2C;
+          --panel-border: rgba(255,255,255,0.10);
+          --teal: #00D9C0;
+          --teal-dim: #1E5F58;
+          --text: #EAF1F5;
+          --text-muted: #8B93A7;
+          --text-faint: #6B7A8D;
+          --text-faintest: #4A5568;
         }
-        .card {
-            background: white;
-            padding: 30px;
-            margin-top: 100px;
-            display: inline-block;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+          min-height: 100%;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
         }
-        button {
-            padding: 15px 30px;
-            margin: 15px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            background: #007bff;
-            color: white;
-            cursor: pointer;
+
+        .font-display { font-family: 'Sora', system-ui, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+        a, button { font-family: inherit; }
+
+        /* ---------- Header ---------- */
+        header {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          border-bottom: 1px solid var(--panel-border);
+          padding: 20px 24px;
         }
-        button:hover {
-            background: #0056b3;
+        @media (min-width: 640px) {
+          header {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+          }
+        }
+
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon {
+          display: flex; align-items: center; justify-content: center;
+          height: 36px; width: 36px; border-radius: 8px;
+          background: rgba(0,217,192,0.10);
+          box-shadow: inset 0 0 0 1px rgba(0,217,192,0.30);
+        }
+        .brand-name { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; color: #fff; }
+        .brand-sub {
+          font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em;
+          color: var(--text-faint); margin-top: 2px;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 24px; }
+        .clock-block { text-align: right; }
+        .clock-time { font-size: 14px; color: var(--teal); }
+        .clock-date { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+        .divider-v { height: 32px; width: 1px; background: var(--panel-border); }
+
+        .user-block { display: flex; align-items: center; gap: 12px; }
+        .avatar {
+          display: flex; align-items: center; justify-content: center;
+          height: 32px; width: 32px; border-radius: 50%;
+          background: #1B2A3D; box-shadow: inset 0 0 0 1px var(--panel-border);
+          font-family: 'Sora', system-ui, sans-serif; font-size: 12px; font-weight: 600;
+        }
+        .logout-btn {
+          display: flex; align-items: center; gap: 6px;
+          background: none; border: none; cursor: pointer;
+          color: var(--text-muted); font-size: 12px;
+          padding: 6px 10px; border-radius: 6px;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .logout-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+        /* ---------- Main ---------- */
+        main { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+        @media (min-width: 640px) { main { padding: 48px 40px; } }
+
+        .hero {
+          display: flex; flex-direction: column; align-items: center; gap: 32px;
+          text-align: center;
+        }
+        @media (min-width: 640px) {
+          .hero { flex-direction: row; align-items: center; justify-content: space-between; text-align: left; }
+        }
+        .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--teal); }
+        .headline { font-size: 30px; font-weight: 700; color: #fff; line-height: 1.2; margin-top: 8px; }
+        @media (min-width: 640px) { .headline { font-size: 36px; } }
+        .subcopy { max-width: 420px; font-size: 14px; line-height: 1.6; color: var(--text-muted); margin-top: 12px; }
+
+        /* Iris signature */
+        .iris-wrap { height: 160px; width: 160px; flex-shrink: 0; position: relative; }
+        @media (min-width: 640px) { .iris-wrap { height: 192px; width: 192px; } }
+        .iris-wrap svg { height: 100%; width: 100%; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+        .ring-outer { transform-origin: 100px 100px; animation: spin 40s linear infinite; }
+        .ring-mid { transform-origin: 100px 100px; animation: spin-rev 28s linear infinite; }
+        .ring-inner { transform-origin: 100px 100px; animation: spin 16s linear infinite; }
+        .scan-line { transform-origin: 100px 100px; animation: spin 10s linear infinite; }
+        .pupil { animation: pulse 2.4s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ring-outer, .ring-mid, .ring-inner, .scan-line, .pupil { animation: none; }
+        }
+
+        /* Stats */
+        .stats {
+          display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 40px;
+        }
+        @media (min-width: 640px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+        .stat-card {
+          display: flex; align-items: center; gap: 12px;
+          border: 1px solid var(--panel-border); background: var(--panel);
+          border-radius: 12px; padding: 14px 16px;
+          cursor: pointer; text-align: left; width: 100%;
+          transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .stat-card:hover { border-color: rgba(0,217,192,0.35); background: #132436; }
+        .stat-card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+        .stat-card.static { cursor: default; }
+        .stat-card.static:hover { border-color: var(--panel-border); background: var(--panel); }
+        .stat-icon {
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+          height: 36px; width: 36px; border-radius: 8px; background: rgba(255,255,255,0.05);
+        }
+        .stat-value { font-size: 18px; font-weight: 600; color: #fff; }
+        .stat-label { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+        /* Actions */
+        .actions {
+          display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 24px;
+        }
+        @media (min-width: 640px) { .actions { grid-template-columns: 1fr 1fr; } }
+
+        .action-card {
+          position: relative; overflow: hidden; text-align: left; cursor: pointer;
+          border-radius: 16px; padding: 24px;
+          border: 1px solid var(--panel-border); background: var(--panel);
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .action-card:hover { border-color: rgba(0,217,192,0.4); background: #132436; }
+        .action-card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+        .action-card.primary {
+          border-color: rgba(0,217,192,0.25);
+          background: linear-gradient(135deg, #0F2A28, #0D1F2C);
+        }
+        .action-card.primary:hover { border-color: rgba(0,217,192,0.5); }
+
+        .action-top { display: flex; align-items: flex-start; justify-content: space-between; }
+        .action-icon {
+          display: flex; align-items: center; justify-content: center;
+          height: 44px; width: 44px; border-radius: 12px;
+          background: rgba(0,217,192,0.10); box-shadow: inset 0 0 0 1px rgba(0,217,192,0.20);
+        }
+        .action-card.primary .action-icon {
+          background: rgba(0,217,192,0.15); box-shadow: inset 0 0 0 1px rgba(0,217,192,0.30);
+        }
+        .action-arrow { color: #3A4658; transition: transform 0.2s ease, color 0.2s ease; }
+        .action-card:hover .action-arrow { transform: translateX(4px); color: var(--teal); }
+
+        .action-title { font-size: 18px; font-weight: 600; color: #fff; margin-top: 20px; }
+        .action-desc { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+
+        /* Footer */
+        .footnote {
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          margin-top: 40px; text-align: center;
+          font-size: 11px; color: var(--text-faintest);
+        }
+        @media (min-width: 640px) { .footnote { justify-content: flex-start; } }
+
+        /* ---------- Modal ---------- */
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(4,8,14,0.65);
+          display: none; align-items: center; justify-content: center;
+          padding: 24px; z-index: 50;
+        }
+        .modal-overlay.show { display: flex; }
+
+        .modal-box {
+          width: 100%; max-width: 460px; max-height: 80vh;
+          background: var(--panel); border: 1px solid var(--panel-border);
+          border-radius: 16px; padding: 24px;
+          display: flex; flex-direction: column;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .modal-title { font-size: 16px; font-weight: 700; color: #fff; }
+        .modal-close {
+          background: none; border: none; cursor: pointer;
+          color: var(--text-faint); padding: 4px; border-radius: 6px;
+          display: flex; align-items: center; justify-content: center;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+        .modal-body { overflow-y: auto; }
+
+        .modal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .modal-table th {
+          text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+          color: var(--text-faint); padding: 8px 10px;
+          border-bottom: 1px solid var(--panel-border);
+        }
+        .modal-table td {
+          padding: 10px 10px; color: var(--text);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .modal-table tr:last-child td { border-bottom: none; }
+
+        .modal-empty, .modal-loading, .modal-error {
+          padding: 24px 8px; text-align: center; font-size: 13px; color: var(--text-faint);
+        }
+        .modal-error { color: #FF6B6B; }
+
+        .status-chip {
+          display: inline-flex; align-items: center; gap: 5px;
+          font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+          background: rgba(0,217,192,0.1); color: var(--teal);
+          border: 1px solid rgba(0,217,192,0.25);
         }
     </style>
 </head>
-
 <body>
 
-<h1>Iris Attendance Dashboard</h1>
+<header>
+    <div class="brand">
+        <div class="brand-icon">
+            <!-- eye icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </div>
+        <div>
+            <p class="brand-name font-display">IRIS</p>
+            <p class="brand-sub font-mono">Attendance System</p>
+        </div>
+    </div>
 
-<div class="card">
-    <button onclick="goToAdd()">➕ Add Student</button>
-    <button onclick="goToAttendance()">📷 Take Attendance</button>
+    <div class="header-right">
+        <div class="clock-block">
+            <p class="clock-time font-mono" id="clockTime">--:--:--</p>
+            <p class="clock-date" id="clockDate">—</p>
+        </div>
+        <div class="divider-v"></div>
+        <div class="user-block">
+            <button class="logout-btn" onclick="handleLogout()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Log out
+            </button>
+        </div>
+    </div>
+</header>
+
+<main>
+    <!-- Hero -->
+    <section class="hero">
+        <div>
+            <p class="eyebrow font-mono" id="greeting">Good afternoon</p>
+            <h1 class="headline font-display">Welcome back</h1>
+            <p class="subcopy">Your class is ready for verification. Add new students to the registry or start today's iris scan attendance.</p>
+        </div>
+
+        <div class="iris-wrap">
+            <svg viewBox="0 0 200 200" aria-hidden="true">
+                <defs>
+                    <radialGradient id="irisGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#00E6C8" stop-opacity="0.55" />
+                        <stop offset="60%" stop-color="#00E6C8" stop-opacity="0.08" />
+                        <stop offset="100%" stop-color="#00E6C8" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+                <circle cx="100" cy="100" r="95" fill="url(#irisGlow)" />
+                <circle class="ring-outer" cx="100" cy="100" r="78" fill="none" stroke="#1E5F58" stroke-width="1" stroke-dasharray="2 6" />
+                <circle class="ring-mid" cx="100" cy="100" r="62" fill="none" stroke="#00D9C0" stroke-width="1.5" stroke-dasharray="1 4" />
+                <circle class="ring-inner" cx="100" cy="100" r="46" fill="none" stroke="#00D9C0" stroke-width="2" stroke-dasharray="120 200" />
+                <circle cx="100" cy="100" r="20" fill="#061219" stroke="#00D9C0" stroke-width="1.5" />
+                <circle class="pupil" cx="100" cy="100" r="9" fill="#00D9C0" />
+                <line class="scan-line" x1="10" y1="100" x2="190" y2="100" stroke="#00D9C0" stroke-opacity="0.5" stroke-width="1" />
+            </svg>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <button class="stat-card" onclick="openStudentsModal()">
+            <div class="stat-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </div>
+            <div>
+                <p class="stat-value font-mono" id="enrolledCount">…</p>
+                <p class="stat-label">Enrolled students</p>
+            </div>
+        </button>
+
+        <button class="stat-card" onclick="openPresentModal()">
+            <div class="stat-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="stat-value font-mono" id="presentTodayCount">…</p>
+                <p class="stat-label">Present today</p>
+            </div>
+        </button>
+
+        <div class="stat-card static">
+            <div class="stat-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m12 3-1.9 4.9L5 9.1l3.8 3.4L7.8 18 12 15.3 16.2 18l-1-5.5L19 9.1l-5.1-1.2Z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="stat-value font-mono">Live</p>
+                <p class="stat-label">Last sync</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Actions -->
+    <section class="actions">
+        <button class="action-card" onclick="handleAddStudent()">
+            <div class="action-top">
+                <div class="action-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                    </svg>
+                </div>
+                <svg class="action-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+            </div>
+            <h2 class="action-title font-display">Add student</h2>
+            <p class="action-desc">Register a new student and capture their iris profile.</p>
+        </button>
+
+        <button class="action-card primary" onclick="handleTakeAttendance()">
+            <div class="action-top">
+                <div class="action-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </div>
+                <svg class="action-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+            </div>
+            <h2 class="action-title font-display">Take attendance</h2>
+            <p class="action-desc">Scan the class and mark today's attendance instantly.</p>
+        </button>
+    </section>
+
+    <p class="footnote">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+        </svg>
+        Verified by iris biometric matching · Data processed on-device
+    </p>
+</main>
+
+<!-- Enrolled students modal -->
+<div class="modal-overlay" id="studentsModalOverlay" onclick="closeModalOnOverlay(event, 'studentsModalOverlay')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <p class="modal-title font-display">Enrolled students</p>
+            <button class="modal-close" onclick="closeModal('studentsModalOverlay')" aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" id="studentsModalBody">
+            <p class="modal-loading">Loading students…</p>
+        </div>
+    </div>
+</div>
+
+<!-- Present today modal -->
+<div class="modal-overlay" id="presentModalOverlay" onclick="closeModalOnOverlay(event, 'presentModalOverlay')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <p class="modal-title font-display">Present today</p>
+            <button class="modal-close" onclick="closeModal('presentModalOverlay')" aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" id="presentModalBody">
+            <p class="modal-loading">Loading attendance…</p>
+        </div>
+    </div>
 </div>
 
 <script>
-    if (localStorage.getItem("loggedIn") !== "true") {
-        window.location.href = "login.html";
+    // ---- API base: same origin by default. Change if your API runs elsewhere, e.g. 'http://localhost:8080' ----
+    const API_BASE = 'http://localhost:8080';
+
+    // ---- Enrolled students count ----
+    // Expects a GET endpoint returning a plain number or { count: number }
+    // e.g. Spring controller: @GetMapping("/api/students/count") -> studentRepository.count()
+    fetch(`${API_BASE}/api/students/count`)
+      .then(res => {
+        if (!res.ok) throw new Error('Request failed: ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        const count = typeof data === 'number' ? data : data.count;
+        document.getElementById('enrolledCount').textContent = count;
+      })
+      .catch(err => {
+        console.error('Failed to load enrolled student count:', err);
+        document.getElementById('enrolledCount').textContent = '—';
+      });
+
+    // ---- Present today count ----
+    // Expects a GET endpoint returning a plain number or { count: number }
+    // e.g. Spring controller: @GetMapping("/api/attendance/today/count")
+    //   -> attendanceRepository.countByDate(LocalDate.now())
+    fetch(`${API_BASE}/api/attendance/today/count`)
+      .then(res => {
+        if (!res.ok) throw new Error('Request failed: ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        const count = typeof data === 'number' ? data : data.count;
+        document.getElementById('presentTodayCount').textContent = count;
+      })
+      .catch(err => {
+        console.error('Failed to load present-today count:', err);
+        document.getElementById('presentTodayCount').textContent = '—';
+      });
+
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+      document.getElementById('clockTime').textContent = timeStr;
+      document.getElementById('clockDate').textContent = dateStr;
+
+      const hour = now.getHours();
+      let greeting = 'Good evening';
+      if (hour < 12) greeting = 'Good morning';
+      else if (hour < 17) greeting = 'Good afternoon';
+      document.getElementById('greeting').textContent = greeting;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ---- Wire these up to your Spring Boot endpoints / page navigation ----
+    function handleAddStudent() {
+      window.location.href = 'add-student.html'; // adjust to your route
+    }
+    function handleTakeAttendance() {
+      window.location.href = 'index.html'; // adjust to your route
+    }
+    function handleLogout() {
+      window.location.href = 'logout'; // adjust to your Spring Security logout endpoint
     }
 
-    function goToAdd() {
-        window.location.href = "add-student.html";
+    // ---- Modal open/close ----
+    function openModal(id) {
+      document.getElementById(id).classList.add('show');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+    function closeModalOnOverlay(event, id) {
+      if (event.target.id === id) closeModal(id);
     }
 
-    function goToAttendance() {
-        window.location.href = "index.html";
+    // ---- Enrolled students modal ----
+    // Expects a GET endpoint returning an array like:
+    // [ { "studentId": "101", "studentName": "..." }, ... ]
+    function openStudentsModal() {
+      openModal('studentsModalOverlay');
+      const body = document.getElementById('studentsModalBody');
+      body.innerHTML = '<p class="modal-loading">Loading students…</p>';
+
+      fetch(`${API_BASE}/api/students`)
+        .then(res => {
+          if (!res.ok) throw new Error('Request failed: ' + res.status);
+          return res.json();
+        })
+        .then(students => {
+          if (!students || students.length === 0) {
+            body.innerHTML = '<p class="modal-empty">No students enrolled yet.</p>';
+            return;
+          }
+          const rows = students.map(s => `
+            <tr>
+              <td class="font-mono">${escapeHtml(s.studentId ?? s.id ?? '')}</td>
+              <td>${escapeHtml(s.studentName ?? s.name ?? '')}</td>
+            </tr>
+          `).join('');
+          body.innerHTML = `
+            <table class="modal-table">
+              <thead><tr><th>ID</th><th>Name</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          `;
+        })
+        .catch(err => {
+          console.error('Failed to load students:', err);
+          body.innerHTML = '<p class="modal-error">Could not load the student list.</p>';
+        });
+    }
+
+    // ---- Present today modal ----
+    // Expects a GET endpoint returning an array like:
+    // [ { "studentId": "101", "studentName": "...", "time": "09:14 AM" }, ... ]
+    function openPresentModal() {
+      openModal('presentModalOverlay');
+      const body = document.getElementById('presentModalBody');
+      body.innerHTML = '<p class="modal-loading">Loading attendance…</p>';
+
+      fetch(`${API_BASE}/api/attendance/today`)
+        .then(res => {
+          if (!res.ok) throw new Error('Request failed: ' + res.status);
+          return res.json();
+        })
+        .then(records => {
+          if (!records || records.length === 0) {
+            body.innerHTML = '<p class="modal-empty">No one has been marked present yet today.</p>';
+            return;
+          }
+          const rows = records.map(r => `
+            <tr>
+              <td class="font-mono">${escapeHtml(r.studentId ?? r.id ?? '')}</td>
+              <td>${escapeHtml(r.studentName ?? r.name ?? '')}</td>
+              <td><span class="status-chip">${escapeHtml(r.time ?? r.timestamp ?? 'Present')}</span></td>
+            </tr>
+          `).join('');
+          body.innerHTML = `
+            <table class="modal-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Time</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          `;
+        })
+        .catch(err => {
+          console.error('Failed to load today\'s attendance:', err);
+          body.innerHTML = '<p class="modal-error">Could not load today\'s attendance.</p>';
+        });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     }
 </script>
 

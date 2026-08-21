@@ -1,124 +1,587 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Add Student</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Student — Iris Attendance System</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
 
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
     <style>
-        body { text-align:center; font-family:Arial; background:#f0f2f5; }
-        .box {
-            background:white;
-            padding:20px;
-            display:inline-block;
-            margin-top:50px;
-            border-radius:10px;
+        :root {
+          --bg: #0B121F;
+          --panel: #111B2C;
+          --panel-border: rgba(255,255,255,0.10);
+          --teal: #00D9C0;
+          --teal-dim: #1E5F58;
+          --text: #EAF1F5;
+          --text-muted: #8B93A7;
+          --text-faint: #6B7A8D;
+          --text-faintest: #4A5568;
+          --danger: #FF6B6B;
         }
-        input, button {
-            padding:10px;
-            margin:10px;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+          min-height: 100%;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
         }
+
+        .font-display { font-family: 'Sora', system-ui, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        a, button, input { font-family: inherit; }
+
+        /* ---------- Header ---------- */
+        header {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 16px; border-bottom: 1px solid var(--panel-border); padding: 20px 24px;
+        }
+        @media (min-width: 640px) { header { padding: 20px 40px; } }
+
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon {
+          display: flex; align-items: center; justify-content: center;
+          height: 36px; width: 36px; border-radius: 8px;
+          background: rgba(0,217,192,0.10);
+          box-shadow: inset 0 0 0 1px rgba(0,217,192,0.30);
+        }
+        .brand-name { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; color: #fff; }
+        .brand-sub {
+          font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em;
+          color: var(--text-faint); margin-top: 2px;
+        }
+
+        .back-link {
+          display: flex; align-items: center; gap: 6px;
+          background: none; border: none; cursor: pointer;
+          color: var(--text-muted); font-size: 13px;
+          padding: 8px 12px; border-radius: 6px;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .back-link:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .back-link:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+        /* ---------- Main ---------- */
+        main { max-width: 960px; margin: 0 auto; padding: 48px 24px 64px; }
+        @media (min-width: 640px) { main { padding: 56px 40px 72px; } }
+
+        .page-eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--teal); }
+        .page-title { font-size: 30px; font-weight: 700; color: #fff; margin-top: 8px; }
+        @media (min-width: 640px) { .page-title { font-size: 34px; } }
+        .page-sub { font-size: 14px; color: var(--text-muted); margin-top: 10px; max-width: 480px; line-height: 1.6; }
+
+        .layout {
+          display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 40px;
+        }
+        @media (min-width: 860px) { .layout { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+        .panel {
+          border: 1px solid var(--panel-border);
+          background: var(--panel);
+          border-radius: 16px;
+          padding: 28px;
+        }
+
+        /* ---------- Form fields ---------- */
+        .field { margin-bottom: 20px; }
+        .field:last-child { margin-bottom: 0; }
+        .field-label {
+          display: block; font-size: 12px; font-weight: 600;
+          color: var(--text-muted); margin-bottom: 8px;
+          text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .field-input {
+          width: 100%;
+          background: #0B121F;
+          border: 1px solid var(--panel-border);
+          border-radius: 10px;
+          padding: 12px 14px;
+          font-size: 14px;
+          color: var(--text);
+          transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+        }
+        .field-input::placeholder { color: var(--text-faintest); }
+        .field-input:focus {
+          outline: none; border-color: var(--teal);
+          box-shadow: 0 0 0 3px rgba(0,217,192,0.15);
+        }
+        .field-input.invalid { border-color: var(--danger); }
+        .field-input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .field-error { display: none; font-size: 12px; color: var(--danger); margin-top: 6px; }
+        .field-error.show { display: block; }
+
+        .divider { height: 1px; background: var(--panel-border); margin: 24px 0; }
+
+        .form-hint {
+          display: flex; align-items: flex-start; gap: 8px;
+          font-size: 12px; color: var(--text-faint); line-height: 1.5;
+        }
+
+        /* ---------- Capture area ---------- */
+        .capture-panel { display: flex; flex-direction: column; align-items: center; text-align: center; }
+
+        .capture-frame {
+          position: relative;
+          height: 220px; width: 220px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          background: #0B121F;
+          overflow: hidden;
+        }
+
+        video { display: none; }
+        canvas {
+          position: absolute; inset: 0;
+          width: 100%; height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+        }
+
+        .capture-frame svg.ring-overlay {
+          position: absolute; inset: 0; height: 100%; width: 100%;
+          pointer-events: none; z-index: 1;
+        }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+        .ring-outer { transform-origin: 100px 100px; animation: spin 40s linear infinite; }
+        .ring-mid { transform-origin: 100px 100px; animation: spin-rev 22s linear infinite; }
+        .scan-line { transform-origin: 100px 100px; animation: spin 6s linear infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ring-outer, .ring-mid, .scan-line { animation: none; }
+        }
+
+        .status-pill {
+          margin-top: 20px;
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px; border-radius: 999px;
+          font-size: 12px; font-weight: 600;
+          background: rgba(255,255,255,0.05);
+          color: var(--text-muted);
+          border: 1px solid var(--panel-border);
+        }
+        .status-pill.ready { color: var(--teal); border-color: rgba(0,217,192,0.3); background: rgba(0,217,192,0.08); }
+        .status-pill.done { color: var(--teal); border-color: rgba(0,217,192,0.4); background: rgba(0,217,192,0.12); }
+        .status-dot { height: 6px; width: 6px; border-radius: 50%; background: currentColor; }
+
+        /* ---------- Progress dots ---------- */
+        .dot-row { display: flex; gap: 10px; margin-top: 16px; justify-content: center; }
+        .progress-dot {
+          height: 10px; width: 10px; border-radius: 50%;
+          border: 1.5px solid var(--text-faintest);
+          background: transparent;
+          transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .progress-dot.filled { background: var(--teal); border-color: var(--teal); }
+
+        .capture-instructions {
+          margin-top: 16px; font-size: 12px; color: var(--text-faint);
+          max-width: 280px; line-height: 1.6;
+        }
+
+        /* ---------- Actions ---------- */
+        .actions-row {
+          display: flex; align-items: center; gap: 12px;
+          margin-top: 24px; justify-content: center; flex-wrap: wrap;
+        }
+        .btn {
+          display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+          border-radius: 10px; padding: 12px 22px;
+          font-size: 14px; font-weight: 600; cursor: pointer;
+          border: 1px solid transparent;
+          transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+        .btn-primary { background: linear-gradient(135deg, #00D9C0, #00B5A0); color: #06171A; }
+        .btn-primary:hover { filter: brightness(1.08); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+        .btn-secondary { background: transparent; border-color: var(--panel-border); color: var(--text-muted); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+        /* ---------- Toast ---------- */
+        .toast {
+          position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+          display: flex; align-items: center; gap: 10px;
+          background: var(--panel); border: 1px solid var(--panel-border);
+          border-radius: 12px; padding: 14px 18px;
+          font-size: 13px; color: var(--text);
+          opacity: 0; pointer-events: none;
+          transition: opacity 0.25s ease, transform 0.25s ease;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        .toast.success { border-color: rgba(0,217,192,0.35); }
+        .toast.error { border-color: rgba(255,107,107,0.35); }
+        .toast-icon.success { color: var(--teal); }
+        .toast-icon.error { color: var(--danger); }
     </style>
 </head>
-
 <body>
 
-<h2>Add Student Iris</h2>
+<header>
+    <div class="brand">
+        <div class="brand-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </div>
+        <div>
+            <p class="brand-name font-display">IRIS</p>
+            <p class="brand-sub font-mono">Attendance System</p>
+        </div>
+    </div>
 
-<div class="box">
-    <input type="text" id="studentId" placeholder="Enter Student ID"><br>
-    <input type="text" id="studentName" placeholder="Enter Student Name"><br>
-    <video id="video" autoplay style="display:none;"></video>
-    <canvas id="canvas" width="400" height="300"></canvas><br>
+    <button class="back-link" onclick="goBack()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to dashboard
+    </button>
+</header>
 
-    <button onclick="capture()">Capture & Save</button>
-    <button onclick="goBack()">Back</button>
+<main>
+    <p class="page-eyebrow font-mono">Student registry</p>
+    <h1 class="page-title font-display">Add student</h1>
+    <p class="page-sub">Enter the student's details, then capture 5 iris samples for reliable recognition.</p>
+
+    <div class="layout">
+        <!-- Details panel -->
+        <div class="panel">
+            <div class="field">
+                <label class="field-label" for="studentId">Student ID</label>
+                <input class="field-input" type="text" id="studentId" placeholder="e.g. 101" autocomplete="off" />
+                <p class="field-error" id="studentIdError">Student ID is required.</p>
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="studentName">Student name</label>
+                <input class="field-input" type="text" id="studentName" placeholder="e.g. Vanitha Athiyappan" autocomplete="off" />
+                <p class="field-error" id="studentNameError">Student name is required.</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="form-hint">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                ID and name lock once the first photo is captured, so all 5 samples stay matched to the same student.
+            </p>
+        </div>
+
+        <!-- Capture panel -->
+        <div class="panel capture-panel">
+            <div class="capture-frame" id="captureFrame">
+                <video id="video" autoplay playsinline muted></video>
+                <canvas id="canvas" width="400" height="300"></canvas>
+
+                <svg class="ring-overlay" viewBox="0 0 200 200" aria-hidden="true">
+                    <defs>
+                        <radialGradient id="irisGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#00E6C8" stop-opacity="0.25" />
+                            <stop offset="65%" stop-color="#00E6C8" stop-opacity="0.04" />
+                            <stop offset="100%" stop-color="#00E6C8" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="98" fill="url(#irisGlow)" />
+                    <circle class="ring-outer" cx="100" cy="100" r="90" fill="none" stroke="#00D9C0" stroke-width="1.5" stroke-dasharray="2 7" opacity="0.75" />
+                    <circle class="ring-mid" cx="100" cy="100" r="76" fill="none" stroke="#00D9C0" stroke-width="1.5" stroke-dasharray="1 5" opacity="0.55" />
+                    <line class="scan-line" id="scanLine" x1="12" y1="100" x2="188" y2="100" stroke="#00D9C0" stroke-opacity="0.7" stroke-width="1.5" />
+                </svg>
+            </div>
+
+            <div class="status-pill" id="statusPill">
+                <span class="status-dot"></span>
+                <span id="statusText">Enter details to begin</span>
+            </div>
+
+            <div class="dot-row" id="dotRow">
+                <span class="progress-dot" data-dot="1"></span>
+                <span class="progress-dot" data-dot="2"></span>
+                <span class="progress-dot" data-dot="3"></span>
+                <span class="progress-dot" data-dot="4"></span>
+                <span class="progress-dot" data-dot="5"></span>
+            </div>
+
+            <p class="capture-instructions" id="captureInstructions">
+                Keep the eye centered in the ring and capture from slightly different angles each time for a stronger dataset.
+            </p>
+
+            <div class="actions-row">
+                <button type="button" class="btn btn-secondary" id="resetBtn" onclick="resetCapture()" style="display:none;">
+                    Start over
+                </button>
+                <button type="button" class="btn btn-primary" id="captureBtn" onclick="capture()" disabled>
+                    Capture &amp; save
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="toast" id="toast">
+    <svg class="toast-icon" id="toastIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span id="toastText">Saved successfully.</span>
 </div>
 
 <script>
+    // ==================================================================
+    // Iris capture (MediaPipe FaceMesh) — same logic as before, unchanged
+    // ==================================================================
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
     const faceMesh = new FaceMesh({
-        locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+      locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
     });
 
     faceMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true
+      maxNumFaces: 1,
+      refineLandmarks: true
     });
 
     faceMesh.onResults(results => {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (results.multiFaceLandmarks.length > 0) {
+      if (results.multiFaceLandmarks.length > 0) {
+        const landmarks = results.multiFaceLandmarks[0];
+        const irisPoints = [469, 470, 471, 472];
 
-            const landmarks = results.multiFaceLandmarks[0];
-            const irisPoints = [469,470,471,472];
+        let minX = 9999, minY = 9999, maxX = 0, maxY = 0;
 
-            let minX=9999,minY=9999,maxX=0,maxY=0;
+        irisPoints.forEach(i => {
+          const x = landmarks[i].x * canvas.width;
+          const y = landmarks[i].y * canvas.height;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        });
 
-            irisPoints.forEach(i=>{
-                const x = landmarks[i].x * canvas.width;
-                const y = landmarks[i].y * canvas.height;
+        const pad = 20;
 
-                minX = Math.min(minX,x);
-                minY = Math.min(minY,y);
-                maxX = Math.max(maxX,x);
-                maxY = Math.max(maxY,y);
-            });
+        ctx.drawImage(
+          video,
+          minX - pad, minY - pad,
+          (maxX - minX) + pad * 2,
+          (maxY - minY) + pad * 2,
+          0, 0, canvas.width, canvas.height
+        );
 
-            const pad = 20;
-
-            ctx.drawImage(
-                video,
-                minX-pad, minY-pad,
-                (maxX-minX)+pad*2,
-                (maxY-minY)+pad*2,
-                0,0,canvas.width,canvas.height
-            );
-        }
+        setFaceDetected(true);
+      } else {
+        setFaceDetected(false);
+      }
     });
 
-    const camera = new Camera(video,{
-        onFrame: async ()=> await faceMesh.send({image:video}),
-        width:400,
-        height:300
+    const camera = new Camera(video, {
+      onFrame: async () => await faceMesh.send({ image: video }),
+      width: 400,
+      height: 300
     });
 
     camera.start();
 
+    // ==================================================================
+    // Multi-photo capture state (NEW)
+    // ==================================================================
+    const TARGET_PHOTOS = 5;
+    let capturedCount = 0;
+    let faceCurrentlyDetected = false;
+    let sequenceStarted = false;
+
+    const studentIdInput = document.getElementById('studentId');
+    const studentNameInput = document.getElementById('studentName');
+    const studentIdError = document.getElementById('studentIdError');
+    const studentNameError = document.getElementById('studentNameError');
+
+    const captureBtn = document.getElementById('captureBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const captureFrame = document.getElementById('captureFrame');
+    const statusPill = document.getElementById('statusPill');
+    const statusText = document.getElementById('statusText');
+    const captureInstructions = document.getElementById('captureInstructions');
+
+    function detailsValid() {
+      return studentIdInput.value.trim().length > 0 && studentNameInput.value.trim().length > 0;
+    }
+
+    function refreshCaptureAvailability() {
+      const canCapture = detailsValid() && faceCurrentlyDetected && capturedCount < TARGET_PHOTOS;
+      captureBtn.disabled = !canCapture;
+      updateStatusText();
+    }
+
+    function updateStatusText() {
+      if (capturedCount >= TARGET_PHOTOS) return; // final state set elsewhere
+
+      if (!detailsValid()) {
+        statusPill.classList.remove('ready');
+        statusText.textContent = 'Enter details to begin';
+      } else if (faceCurrentlyDetected) {
+        statusPill.classList.add('ready');
+        statusText.textContent = sequenceStarted ? 'Eye detected — capture next' : 'Eye detected — ready to capture';
+      } else {
+        statusPill.classList.remove('ready');
+        statusText.textContent = 'Align the eye with the camera';
+      }
+    }
+
+    function setFaceDetected(isDetected) {
+      faceCurrentlyDetected = isDetected;
+      refreshCaptureAvailability();
+    }
+
+    [studentIdInput, studentNameInput].forEach(input => {
+      input.addEventListener('input', () => {
+        input.classList.remove('invalid');
+        const errorEl = input === studentIdInput ? studentIdError : studentNameError;
+        errorEl.classList.remove('show');
+        refreshCaptureAvailability();
+      });
+    });
+
+    function validateDetails() {
+      let valid = true;
+      if (!studentIdInput.value.trim()) {
+        studentIdInput.classList.add('invalid');
+        studentIdError.classList.add('show');
+        valid = false;
+      }
+      if (!studentNameInput.value.trim()) {
+        studentNameInput.classList.add('invalid');
+        studentNameError.classList.add('show');
+        valid = false;
+      }
+      return valid;
+    }
+
+    function updateProgressUI() {
+      document.querySelectorAll('.progress-dot').forEach(dot => {
+        const dotNumber = Number(dot.dataset.dot);
+        dot.classList.toggle('filled', dotNumber <= capturedCount);
+      });
+    }
+
     async function capture() {
-        const studentId = document.getElementById("studentId").value;
-        const studentName = document.getElementById("studentName").value;
+      if (!validateDetails()) return;
+      if (capturedCount >= TARGET_PHOTOS) return;
 
-        if (!studentId || !studentName) {
-            alert("Enter Student ID and Name");
-            return;
-        }
+      const studentId = studentIdInput.value.trim();
+      const studentName = studentNameInput.value.trim();
 
-        const blob = await new Promise(resolve =>
-            canvas.toBlob(resolve,'image/jpeg')
-        );
+      // Lock fields from the first successful capture onward
+      sequenceStarted = true;
+      studentIdInput.disabled = true;
+      studentNameInput.disabled = true;
+
+      captureBtn.disabled = true;
+      captureBtn.textContent = 'Saving…';
+
+      try {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
 
         const formData = new FormData();
-        formData.append("file", blob);
-        formData.append("studentId", studentId);
-        formData.append("studentName", studentName);
-        const res = await fetch("/student/save", {
-            method: "POST",
-            body: formData
+        formData.append('file', blob);
+        formData.append('studentId', studentId);
+        formData.append('studentName', studentName);
+
+        // Same endpoint as before — backend auto-numbers each file per studentId
+        const res = await fetch('/student/save', {
+          method: 'POST',
+          body: formData
         });
 
         const data = await res.json();
-        alert(data.message);
+
+        if (!res.ok) throw new Error(data.message || 'Save failed');
+
+        capturedCount += 1;
+        updateProgressUI();
+        showToast('success', data.message || `Photo ${capturedCount} saved.`);
+
+        if (capturedCount >= TARGET_PHOTOS) {
+          statusPill.classList.remove('ready');
+          statusPill.classList.add('done');
+          statusText.textContent = 'All 5 photos captured ✓';
+          captureInstructions.textContent = `${studentName} is fully enrolled. Start over to add another student.`;
+          captureBtn.style.display = 'none';
+          resetBtn.style.display = 'inline-flex';
+        } else {
+          captureInstructions.textContent = `${TARGET_PHOTOS - capturedCount} more photo(s) needed. Slightly change angle between shots.`;
+          captureBtn.textContent = 'Capture & save';
+        }
+      } catch (err) {
+        console.error('Failed to save photo:', err);
+        showToast('error', 'Could not save this photo. Try again.');
+        captureBtn.textContent = 'Capture & save';
+      } finally {
+        refreshCaptureAvailability();
+      }
+    }
+
+    function resetCapture() {
+      capturedCount = 0;
+      sequenceStarted = false;
+      updateProgressUI();
+
+      studentIdInput.disabled = false;
+      studentNameInput.disabled = false;
+      studentIdInput.value = '';
+      studentNameInput.value = '';
+
+      captureBtn.style.display = 'inline-flex';
+      captureBtn.textContent = 'Capture & save';
+      resetBtn.style.display = 'none';
+
+      statusPill.classList.remove('done', 'ready');
+      captureInstructions.textContent = 'Keep the eye centered in the ring and capture from slightly different angles each time for a stronger dataset.';
+
+      refreshCaptureAvailability();
+    }
+
+    let toastTimer = null;
+    function showToast(type, message) {
+      const toast = document.getElementById('toast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastText = document.getElementById('toastText');
+
+      toast.classList.remove('success', 'error');
+      toast.classList.add(type);
+      toastIcon.classList.remove('success', 'error');
+      toastIcon.classList.add(type);
+
+      toastIcon.innerHTML = type === 'success'
+        ? '<polyline points="20 6 9 17 4 12"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+
+      toastText.textContent = message;
+      toast.classList.add('show');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
     }
 
     function goBack() {
-        window.location.href = "home.html";
+      window.location.href = 'home.html';
     }
+
+    updateProgressUI();
 </script>
 
 </body>

@@ -1,7 +1,5 @@
 package com.vani.irisapi.controller;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.vani.irisapi.entity.Student;
 import com.vani.irisapi.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,38 +13,38 @@ import java.util.Map;
 @RestController
 @RequestMapping("/student")
 public class StudentController {
-    @Autowired
-    private Cloudinary cloudinary;
+
     @Autowired
     private StudentRepository studentRepository;
+
+    // Absolute path — always resolves here regardless of where the JVM is launched from
+    private static final String DATASET_FOLDER = "C:\\Users\\VANITHA\\Desktop\\irisapi\\dataset\\";
+
     @PostMapping("/save")
     public Map<String, String> saveStudent(
             @RequestParam("file") MultipartFile file,
             @RequestParam("studentName") String studentName,
             @RequestParam("studentId") String studentId) throws Exception {
-        String folder = "dataset/";
 
-        File dir = new File(folder);
+        File dir = new File(DATASET_FOLDER);
         if (!dir.exists()) dir.mkdirs();
 
-        // 🔥 Count existing files for this student
+        // Count existing files for this student to get the next number
         int count = 1;
         while (true) {
-            File f = new File(folder + studentId + "_" + count + ".jpeg");
+            File f = new File(DATASET_FOLDER + studentId + "_" + count + ".jpeg");
             if (!f.exists()) break;
             count++;
         }
 
-        String path = folder + studentId + "_" + count + ".jpeg";
+        File destination = new File(DATASET_FOLDER + studentId + "_" + count + ".jpeg");
+        file.transferTo(destination); // <-- this line was missing; it's what actually writes the file
 
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
-        String imageUrl = uploadResult.get("url").toString();
-        // 🔥 Save student in DB
-        Student student = new Student();
-        student.setId(studentId);
-        student.setName(studentName);
-
+        // Save student in DB (only once, first capture)
         if (!studentRepository.existsById(studentId)) {
+            Student student = new Student();
+            student.setId(studentId);
+            student.setName(studentName);
             studentRepository.save(student);
         }
 

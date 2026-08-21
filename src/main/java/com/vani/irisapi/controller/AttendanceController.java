@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/attendance")
+@RequestMapping("/api/attendance")
 public class AttendanceController {
     @Autowired
     private StudentRepository studentRepository;
@@ -22,39 +22,76 @@ public class AttendanceController {
     @Autowired
     private AttendanceService attendanceService;
     @PostMapping("/mark")
-    public Map<String, Object> verify(@RequestParam("file") MultipartFile file) throws Exception {
+    public Map<String, Object> verify(
+            @RequestParam("file") MultipartFile file) throws Exception {
 
         String path = System.getProperty("java.io.tmpdir")
                 + "/temp_" + System.currentTimeMillis() + ".jpeg";
 
         File tempFile = new File(path);
-        file.transferTo(tempFile);
-
-        String userId = irisService.matchIris(path);
 
         Map<String, Object> response = new HashMap<>();
 
-        if (userId != null) {
+        try {
 
-            String cleanId = userId.split("_")[0];
+            // 1. Save captured iris image temporarily
+            file.transferTo(tempFile);
 
-            Student student = studentRepository.findById(cleanId).orElse(null);
+            // 2. Find the closest iris
+            String userId = irisService.matchIris(path);
 
-            if (student != null) {
-                response.put("userId", cleanId);
-                response.put("name", student.getName());
-                response.put("message", "MATCHED");
-            } else {
-                response.put("message", "User not found");
+            // 3. No match
+            if (userId == null) {
+                response.put("recognized", false);
+                response.put("message", "User not recognized");
+                return response;
             }
 
-        } else {
-            response.put("message", "User not recognized");
-        }
+            // 4. Convert 104_4 → 104
+            String cleanId = userId.split("_")[0];
 
-        tempFile.delete();
-        return response;
+            // 5. Find student 104 in database
+            Student student = studentRepository
+                    .findById(cleanId)
+                    .orElse(null);
+
+            // 6. Student doesn't exist in database
+            if (student == null) {
+                response.put("recognized", false);
+                response.put("message", "Student not found");
+                return response;
+            }
+
+            // 7. Mark attendance
+            String attendanceResult =
+                    attendanceService.markAttendance(cleanId);
+
+            // 8. Send response expected by index.html
+            response.put("recognized", true);
+            response.put("studentId", cleanId);
+            response.put("studentName", student.getName());
+
+            response.put(
+                    "time",
+                    java.time.LocalTime.now()
+                            .format(
+                                    java.time.format.DateTimeFormatter.ofPattern("hh:mm a")
+                            )
+            );
+
+            response.put("message", attendanceResult);
+
+            return response;
+
+        } finally {
+
+            // 9. Delete temporary iris image
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+        }
     }
+
     @PostMapping("/confirm")
     public Map<String, String> confirmAttendance(@RequestParam String userId) {
 

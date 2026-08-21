@@ -1,211 +1,592 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Iris Attendance System</title>
-
-    <!-- MediaPipe -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Take Attendance — Iris Attendance System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-
     <style>
-        body {
-            font-family: Arial;
-            background: #f0f2f5;
-            text-align: center;
+        :root {
+          --bg: #0B121F;
+          --panel: #111B2C;
+          --panel-border: rgba(255,255,255,0.10);
+          --teal: #00D9C0;
+          --teal-dim: #1E5F58;
+          --text: #EAF1F5;
+          --text-muted: #8B93A7;
+          --text-faint: #6B7A8D;
+          --text-faintest: #4A5568;
+          --danger: #FF6B6B;
         }
 
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-top: 50px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+          min-height: 100%;
+          background: var(--bg);
+          color: var(--text);
+          font-family: 'Inter', system-ui, sans-serif;
         }
 
-        button {
-            padding: 10px 20px;
-            margin: 10px;
-            border: none;
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
+        .font-display { font-family: 'Sora', system-ui, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+        a, button { font-family: inherit; }
+
+        /* ---------- Header ---------- */
+        header {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 16px; border-bottom: 1px solid var(--panel-border); padding: 20px 24px;
+        }
+        @media (min-width: 640px) { header { padding: 20px 40px; } }
+
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon {
+          display: flex; align-items: center; justify-content: center;
+          height: 36px; width: 36px; border-radius: 8px;
+          background: rgba(0,217,192,0.10);
+          box-shadow: inset 0 0 0 1px rgba(0,217,192,0.30);
+        }
+        .brand-name { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; color: #fff; }
+        .brand-sub {
+          font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em;
+          color: var(--text-faint); margin-top: 2px;
         }
 
-        button:hover {
-            background: #0056b3;
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        .header-btn {
+          display: flex; align-items: center; gap: 6px;
+          background: none; border: 1px solid transparent; cursor: pointer;
+          color: var(--text-muted); font-size: 12px;
+          padding: 7px 12px; border-radius: 6px;
+          transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .header-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+        .header-btn.danger { color: #E88; border-color: #3A1E24; }
+        .header-btn.danger:hover { background: rgba(255,107,107,0.10); color: var(--danger); }
+
+        /* ---------- Main ---------- */
+        main { max-width: 900px; margin: 0 auto; padding: 48px 24px 64px; }
+        @media (min-width: 640px) { main { padding: 56px 40px 72px; } }
+
+        .page-eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--teal); text-align: center; }
+        @media (min-width: 640px) { .page-eyebrow { text-align: left; } }
+        .page-title { font-size: 28px; font-weight: 700; color: #fff; margin-top: 8px; text-align: center; }
+        @media (min-width: 640px) { .page-title { font-size: 32px; text-align: left; } }
+
+        .layout {
+          display: grid; grid-template-columns: 1fr; gap: 32px; margin-top: 40px;
+        }
+        @media (min-width: 720px) { .layout { grid-template-columns: 340px 1fr; align-items: start; } }
+
+        /* ---------- Scanner column ---------- */
+        .scanner-col { display: flex; flex-direction: column; align-items: center; }
+
+        .capture-frame {
+          position: relative;
+          height: 250px; width: 250px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          background: #0B121F;
+          border: 1px solid var(--panel-border);
+          overflow: hidden;
+        }
+        video { display: none; }
+
+        canvas {
+           position: absolute; inset: 0;
+           width: 100%; height: 100%;
+           object-fit: cover;
+           border-radius: 50%;
         }
 
-        .logout {
-            background: red;
+        .capture-frame svg.ring-overlay {
+          position: absolute; inset: 0; height: 100%; width: 100%;
+          pointer-events: none; z-index: 1;
+        }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes spin-fast { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .ring-outer { transform-origin: 100px 100px; animation: spin 40s linear infinite; }
+        .ring-mid { transform-origin: 100px 100px; animation: spin-rev 22s linear infinite; }
+        .scan-line { transform-origin: 100px 100px; animation: spin-fast 1.4s linear infinite; display: none; }
+        .scan-line.active { display: block; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ring-outer, .ring-mid, .scan-line { animation: none; }
+        }
+
+        .camera-placeholder {
+          position: relative; z-index: 1;
+          display: flex; flex-direction: column; align-items: center; gap: 8px;
+          color: var(--text-faint);
+        }
+        .camera-placeholder.hide { display: none; }
+
+        .status-pill {
+          margin-top: 20px;
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px; border-radius: 999px;
+          font-size: 12px; font-weight: 600;
+          background: rgba(255,255,255,0.05);
+          color: var(--text-muted);
+          border: 1px solid var(--panel-border);
+        }
+        .status-pill.matched { color: var(--teal); border-color: rgba(0,217,192,0.4); background: rgba(0,217,192,0.12); }
+        .status-pill.notmatched { color: var(--danger); border-color: rgba(255,107,107,0.35); background: rgba(255,107,107,0.10); }
+        .status-dot { height: 6px; width: 6px; border-radius: 50%; background: currentColor; }
+
+        .match-card {
+          display: none;
+          margin-top: 16px; width: 100%; max-width: 260px;
+          border: 1px solid rgba(0,217,192,0.25);
+          background: linear-gradient(135deg, #0F2A28, #0D1F2C);
+          border-radius: 12px; padding: 14px; text-align: center;
+        }
+        .match-card.show { display: block; }
+        .match-name { font-size: 16px; font-weight: 600; color: #fff; }
+        .match-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+        .status-note {
+          display: none;
+          margin-top: 14px; max-width: 260px; text-align: center;
+          font-size: 12px; line-height: 1.6; color: var(--text-faint);
+        }
+        .status-note.show { display: block; }
+        .status-note.error-note { color: var(--danger); }
+
+        .capture-btn {
+          margin-top: 24px;
+          width: 100%; max-width: 220px;
+          background: linear-gradient(135deg, #00D9C0, #00B5A0);
+          color: #06171A;
+          border: none; border-radius: 12px;
+          padding: 13px 20px;
+          font-size: 14px; font-weight: 700;
+          cursor: pointer;
+          transition: filter 0.15s ease, opacity 0.15s ease, transform 0.12s ease;
+        }
+        .capture-btn:hover:not(:disabled) { filter: brightness(1.08); }
+        .capture-btn:active:not(:disabled) { transform: scale(0.98); }
+        .capture-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .capture-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+        /* ---------- Today's attendance panel ---------- */
+        .panel {
+          border: 1px solid var(--panel-border);
+          background: var(--panel);
+          border-radius: 16px;
+          padding: 24px;
+        }
+        .panel-header {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .panel-title { font-size: 14px; font-weight: 700; color: #fff; }
+        .panel-count { font-size: 12px; color: var(--teal); }
+
+        .attendance-list {
+          margin-top: 16px;
+          max-height: 380px;
+          overflow-y: auto;
+          display: flex; flex-direction: column; gap: 8px;
+          padding-right: 4px;
+        }
+
+        .attendance-row {
+          display: flex; align-items: center; justify-content: space-between;
+          border: 1px solid rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.02);
+          border-radius: 10px;
+          padding: 10px 12px;
+        }
+        .attendance-row .name { font-size: 14px; color: #fff; }
+        .attendance-row .id { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+        .attendance-row .time {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 11px; color: var(--text-muted);
+          flex-shrink: 0;
+        }
+
+        .attendance-empty {
+          padding: 32px 8px; text-align: center;
+          font-size: 12px; color: var(--text-faint);
         }
     </style>
 </head>
-
 <body>
 
-<h1>Iris Attendance System</h1>
+<header>
+    <div class="brand">
+        <div class="brand-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </div>
+        <div>
+            <p class="brand-name font-display">IRIS</p>
+            <p class="brand-sub font-mono">Attendance System</p>
+        </div>
+    </div>
 
-<div class="container">
-    <video id="video" autoplay style="display:none;"></video>
+    <div class="header-actions">
+        <button class="header-btn" onclick="goToDashboard()">Dashboard</button>
+        <button class="header-btn danger" onclick="handleLogout()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Log out
+        </button>
+    </div>
+</header>
 
-    <canvas id="zoomCanvas" width="400" height="300"></canvas>
-    <br>
+<main>
+    <p class="page-eyebrow font-mono">Live verification</p>
+    <h1 class="page-title font-display">Take attendance</h1>
 
-    <button onclick="captureMultiple()">Capture Attendance</button>
-    <button class="logout" onclick="logout()">Logout</button>
-</div>
+    <div class="layout">
+        <!-- Scanner column -->
+        <div class="scanner-col">
+            <div class="capture-frame" id="captureFrame">
+                <video id="video" autoplay playsinline muted></video>
+                <canvas id="canvas" width="400" height="300"></canvas>
+
+                <svg class="ring-overlay" viewBox="0 0 200 200" aria-hidden="true">
+                    <defs>
+                        <radialGradient id="scanGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#00E6C8" stop-opacity="0.22" />
+                            <stop offset="65%" stop-color="#00E6C8" stop-opacity="0.04" />
+                            <stop offset="100%" stop-color="#00E6C8" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="98" fill="url(#scanGlow)" />
+                    <circle class="ring-outer" cx="100" cy="100" r="90" fill="none" stroke="#00D9C0" stroke-width="1.5" stroke-dasharray="2 7" opacity="0.75" />
+                    <circle class="ring-mid" cx="100" cy="100" r="76" fill="none" stroke="#00D9C0" stroke-width="1.5" stroke-dasharray="1 5" opacity="0.55" />
+                    <line class="scan-line" id="scanLine" x1="12" y1="100" x2="188" y2="100" stroke="#00D9C0" stroke-opacity="0.8" stroke-width="1.5" />
+                </svg>
+
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span class="font-mono" style="font-size:11px;">Starting camera…</span>
+                </div>
+            </div>
+
+            <div class="status-pill" id="statusPill">
+                <span class="status-dot"></span>
+                <span id="statusText">Starting camera…</span>
+            </div>
+
+            <div class="match-card" id="matchCard">
+                <p class="match-name font-display" id="matchName">—</p>
+                <p class="match-meta font-mono" id="matchMeta">—</p>
+            </div>
+
+            <p class="status-note" id="statusNote"></p>
+
+            <button class="capture-btn font-display" id="captureBtn" onclick="captureAttendance()" disabled>
+                Capture attendance
+            </button>
+        </div>
+
+        <!-- Today's attendance panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <p class="panel-title font-display">Today's attendance</p>
+                <span class="panel-count font-mono" id="panelCount">0 marked</span>
+            </div>
+            <div class="attendance-list" id="attendanceList">
+                <p class="attendance-empty">No one has been marked present yet.</p>
+            </div>
+        </div>
+    </div>
+</main>
 
 <script>
-    /* 🔐 LOGIN PROTECTION */
-    if (localStorage.getItem("loggedIn") !== "true") {
-        window.location.href = "login.html";
-    }
+    // ---- API base: same origin by default. Change if your API runs elsewhere ----
+    const API_BASE = '';
 
-    /* 🎥 SETUP */
     const video = document.getElementById('video');
-    const canvas = document.getElementById('zoomCanvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('canvas');
+    const captureFrame = document.getElementById('captureFrame');
+    const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+    const scanLine = document.getElementById('scanLine');
+    const statusPill = document.getElementById('statusPill');
+    const statusText = document.getElementById('statusText');
+    const matchCard = document.getElementById('matchCard');
+    const matchName = document.getElementById('matchName');
+    const matchMeta = document.getElementById('matchMeta');
+    const statusNote = document.getElementById('statusNote');
+    const captureBtn = document.getElementById('captureBtn');
+    const attendanceList = document.getElementById('attendanceList');
+    const panelCount = document.getElementById('panelCount');
 
-    /* 🔥 MEDIAPIPE SETUP */
+    let cameraStream = null;
+    let cameraReady = false;
+    let eyeCurrentlyDetected = false;
+    let isScanning = false;
+    let todaysEntries = [];
+
+    // ---- Iris scanner: same eye-cropping logic used by add-student.html ----
     const faceMesh = new FaceMesh({
-        locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-        }
+      locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
     });
 
     faceMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
+      maxNumFaces: 1,
+      refineLandmarks: true
     });
 
-    /* 👁️ DETECT RIGHT EYE IRIS */
-    faceMesh.onResults((results) => {
+    faceMesh.onResults(results => {
+      const ctx = canvas.getContext('2d');
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Match the canvas to the live video, as in add-student.html.
+      canvas.width = video.videoWidth || 400;
+      canvas.height = video.videoHeight || 300;
 
-        if (results.multiFaceLandmarks.length > 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const landmarks = results.multiFaceLandmarks[0];
+      if (results.multiFaceLandmarks.length > 0) {
+        const landmarks = results.multiFaceLandmarks[0];
+        const irisPoints = [469, 470, 471, 472];
 
-            // 🔥 RIGHT EYE IRIS
-            const irisPoints = [469, 470, 471, 472];
+        let minX = 9999, minY = 9999, maxX = 0, maxY = 0;
 
-            let minX = 9999, minY = 9999;
-            let maxX = 0, maxY = 0;
+        irisPoints.forEach(i => {
+          const x = landmarks[i].x * canvas.width;
+          const y = landmarks[i].y * canvas.height;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        });
 
-            irisPoints.forEach(i => {
-                const x = landmarks[i].x * canvas.width;
-                const y = landmarks[i].y * canvas.height;
+        // Exactly the same padding used during student enrollment.
+        const pad = 20;
 
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-            });
+        ctx.drawImage(
+          video,
+          minX - pad, minY - pad,
+          (maxX - minX) + pad * 2,
+          (maxY - minY) + pad * 2,
+          0, 0, canvas.width, canvas.height
+        );
 
-            const padding = 20;
-
-            const x = minX - padding;
-            const y = minY - padding;
-            const w = (maxX - minX) + padding * 2;
-            const h = (maxY - minY) + padding * 2;
-
-            ctx.drawImage(
-                video,
-                x, y, w, h,
-                0, 0, canvas.width, canvas.height
-            );
-
-            // 🔴 border
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        eyeCurrentlyDetected = true;
+        if (!isScanning) {
+          setStatus('idle', 'Eye detected — ready to scan');
+          captureBtn.disabled = false;
         }
-    });
-
-    /* 🎥 START CAMERA */
-    const camera = new Camera(video, {
-        onFrame: async () => {
-            await faceMesh.send({ image: video });
-        },
-        width: 400,
-        height: 300
-    });
-
-    camera.start();
-
-    /* 📸 CAPTURE FUNCTION */
-    async function captureMultiple() {
-        const results = {};
-let totalFrames = 8;
-
-for (let i = 0; i < totalFrames; i++) {
-
-    // 🔥 GET IMAGE FROM CANVAS
-    const blob = await new Promise(resolve =>
-        zoomCanvas.toBlob(resolve, 'image/jpeg')
-    );
-
-    const formData = new FormData();
-    formData.append("file", blob, "iris.jpg");
-
-    // 🔥 THIS WAS MISSING
-    const res = await fetch("/attendance/mark", {
-        method: "POST",
-        body: formData
-    });
-
-    const data = await res.json();
-
-    console.log("Frame result:", data);
-
-    // 🔥 count valid matches
-    if (data.userId && data.name) {
-        if (!results[data.userId]) {
-            results[data.userId] = { count: 0, name: data.name };
+      } else {
+        eyeCurrentlyDetected = false;
+        captureBtn.disabled = true;
+        if (!isScanning) {
+          setStatus('idle', 'Align the eye with the camera');
         }
-        results[data.userId].count++;
+      }
+    });
+
+    // ---- Start camera ----
+    async function startCamera() {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 400 },
+            height: { ideal: 300 }
+          }
+        });
+
+        video.srcObject = cameraStream;
+        cameraPlaceholder.classList.add('hide');
+        cameraReady = true;
+        setStatus('idle', 'Align the eye with the camera');
+
+        const processFrame = async () => {
+          if (video.readyState >= 2) {
+            try {
+              await faceMesh.send({ image: video });
+            } catch (err) {
+              console.error('Eye detection failed:', err);
+            }
+          }
+
+          if (cameraStream && cameraStream.active) {
+            requestAnimationFrame(processFrame);
+          }
+        };
+
+        await video.play();
+        processFrame();
+
+      } catch (err) {
+        console.error('Camera access failed:', err);
+        cameraReady = false;
+        eyeCurrentlyDetected = false;
+        captureBtn.disabled = true;
+        setStatus('error', 'Camera unavailable');
+        statusNote.textContent = 'Camera access was denied or unavailable.';
+        statusNote.classList.add('show', 'error-note');
+      }
     }
 
-    await new Promise(r => setTimeout(r, 300));
-}
-
-        let bestUser = null;
-        let maxCount = 0;
-
-        let bestName = null;
-
-        for (let user in results) {
-            if (results[user].count > maxCount) {
-                maxCount = results[user].count;
-                bestUser = user;
-                bestName = results[user].name;
-            }
-        }
-
-        if (bestUser && maxCount >= 3) {
-
-            const res = await fetch("/attendance/confirm?userId=" + bestUser, {
-            method: "POST"
-            });
-
-            const data = await res.json();
-
-            alert(data.message + " for " + bestName);
-
-            } else {
-                alert("User not recognized");
-            }
-        }
-
-    function logout() {
-        localStorage.removeItem("loggedIn");
-        window.location.href = "login.html";
+    function setStatus(kind, text) {
+      statusPill.classList.remove('matched', 'notmatched');
+      if (kind === 'matched') statusPill.classList.add('matched');
+      if (kind === 'notmatched' || kind === 'error') statusPill.classList.add('notmatched');
+      statusText.textContent = text;
     }
+
+    function frameToBlob() {
+      return new Promise(resolve => {
+        // The canvas already contains ONLY the eye/iris crop.
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.9);
+      });
+    }
+
+    // ---- Capture & verify ----
+    // Request: multipart/form-data { file: <eye/iris crop jpeg> }
+    // Response: { recognized: boolean, studentId, studentName, time, message }
+    async function captureAttendance() {
+      if (!cameraReady || !eyeCurrentlyDetected || isScanning) return;
+
+      isScanning = true;
+      captureBtn.disabled = true;
+      captureBtn.textContent = 'Scanning…';
+      scanLine.classList.add('active');
+      matchCard.classList.remove('show');
+      statusNote.classList.remove('show', 'error-note');
+      setStatus('scanning', 'Scanning…');
+
+      try {
+        const blob = await frameToBlob();
+        if (!blob) throw new Error('Could not capture the eye image.');
+
+        const formData = new FormData();
+        formData.append('file', blob);
+
+        const res = await fetch(`${API_BASE}/api/attendance/mark`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Request failed');
+
+        if (data.recognized) {
+          const time = data.time || new Date().toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          setStatus('matched', 'Match found');
+          matchName.textContent = data.studentName || 'Unknown';
+          matchMeta.textContent = `ID ${data.studentId || '—'} · marked at ${time}`;
+          matchCard.classList.add('show');
+          addToTodaysList({
+            id: data.studentId,
+            name: data.studentName,
+            time
+          });
+        } else {
+          setStatus('notmatched', 'Not recognized');
+          statusNote.textContent = 'No match found for this iris. Try again, or check the student is enrolled.';
+          statusNote.classList.add('show');
+        }
+      } catch (err) {
+        console.error('Attendance capture failed:', err);
+        setStatus('error', 'Something went wrong');
+        statusNote.textContent = 'Could not verify iris. Please try again.';
+        statusNote.classList.add('show', 'error-note');
+      } finally {
+        isScanning = false;
+        scanLine.classList.remove('active');
+        captureBtn.disabled = !eyeCurrentlyDetected;
+        captureBtn.textContent = 'Capture attendance';
+      }
+    }
+
+    // ---- Today's attendance list ----
+    function addToTodaysList(entry) {
+      todaysEntries = todaysEntries.filter(e => e.id !== entry.id);
+      todaysEntries.unshift(entry);
+      renderTodaysList();
+    }
+
+    function renderTodaysList() {
+      panelCount.textContent = `${todaysEntries.length} marked`;
+
+      if (todaysEntries.length === 0) {
+        attendanceList.innerHTML = '<p class="attendance-empty">No one has been marked present yet.</p>';
+        return;
+      }
+
+      attendanceList.innerHTML = todaysEntries.map(e => `
+        <div class="attendance-row">
+          <div>
+            <p class="name">${escapeHtml(e.name || 'Unknown')}</p>
+            <p class="id font-mono">ID ${escapeHtml(e.id ?? '—')}</p>
+          </div>
+          <div class="time font-mono">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            ${escapeHtml(e.time || '')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ---- Load today's attendance on page load ----
+    // Expected: GET /api/attendance/today -> [ { studentId, studentName, time }, ... ]
+    function loadTodaysAttendance() {
+      fetch(`${API_BASE}/api/attendance/today`)
+        .then(res => (res.ok ? res.json() : []))
+        .then(records => {
+          if (!Array.isArray(records)) return;
+          todaysEntries = records.map(r => ({
+            id: r.studentId ?? r.id,
+            name: r.studentName ?? r.name,
+            time: r.time ?? r.timestamp ?? '',
+          }));
+          renderTodaysList();
+        })
+        .catch(err => console.error('Failed to load today\'s attendance:', err));
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function goToDashboard() {
+      if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+      window.location.href = 'home.html'; // adjust to your dashboard route
+    }
+
+    function handleLogout() {
+      if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+      window.location.href = 'logout'; // adjust to your Spring Security logout endpoint
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+    });
+
+    startCamera();
+    loadTodaysAttendance();
 </script>
 
 </body>

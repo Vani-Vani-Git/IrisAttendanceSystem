@@ -1,44 +1,602 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Login · IrisAttend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: #f5f5f5;
+        :root{
+          --bg-deep:#0a0f1e;
+          --bg-panel:#0d1424;
+          --surface:#111a2e;
+          --surface-2:#16203a;
+          --line:#22304d;
+          --cyan:#22d3ee;
+          --cyan-dim:#0e7490;
+          --violet:#818cf8;
+          --text:#e7ecf7;
+          --text-dim:#8a94ad;
+          --text-faint:#5b667f;
+          --danger:#f87171;
         }
-        .box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 300px;
+
+        *{box-sizing:border-box; margin:0; padding:0;}
+
+        html,body{height:100%;}
+
+        body{
+          font-family:'Inter', sans-serif;
+          background:var(--bg-deep);
+          color:var(--text);
+          min-height:100vh;
+          display:flex;
+          overflow:hidden;
         }
-        input, button {
-            width: 100%;
-            margin: 10px 0;
-            padding: 10px;
+
+        @media (prefers-reduced-motion: reduce){
+          *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
         }
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
+
+        .wrap{
+          display:flex;
+          width:100%;
+          min-height:100vh;
+        }
+
+        /* ===================== LEFT: BIOMETRIC PANEL ===================== */
+        .panel-left{
+          position:relative;
+          flex:1.15;
+          background:
+            radial-gradient(ellipse 900px 700px at 30% 20%, rgba(34,211,238,0.10), transparent 60%),
+            radial-gradient(ellipse 700px 600px at 80% 85%, rgba(129,140,248,0.10), transparent 55%),
+            var(--bg-panel);
+          display:flex;
+          flex-direction:column;
+          justify-content:space-between;
+          padding:56px 64px;
+          border-right:1px solid var(--line);
+          overflow:hidden;
+        }
+
+        .grid-overlay{
+          position:absolute; inset:0;
+          background-image:
+            linear-gradient(rgba(34,211,238,0.045) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34,211,238,0.045) 1px, transparent 1px);
+          background-size:42px 42px;
+          mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 30%, transparent 80%);
+          pointer-events:none;
+        }
+
+        .brand{
+          position:relative;
+          display:flex;
+          align-items:center;
+          gap:12px;
+          z-index:2;
+        }
+
+        .brand-mark{
+          width:36px; height:36px;
+          border-radius:9px;
+          background:linear-gradient(135deg, var(--cyan), var(--violet));
+          display:flex; align-items:center; justify-content:center;
+          box-shadow:0 0 24px rgba(34,211,238,0.35);
+        }
+        .brand-mark svg{ width:20px; height:20px; }
+
+        .brand-name{
+          font-family:'Space Grotesk', sans-serif;
+          font-weight:600;
+          font-size:17px;
+          letter-spacing:0.01em;
+        }
+        .brand-name span{ color:var(--cyan); }
+
+        .scan-stage{
+          position:relative;
+          z-index:2;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          justify-content:center;
+          flex:1;
+          gap:28px;
+        }
+
+        .iris-holder{
+          position:relative;
+          width:260px;
+          height:260px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        }
+
+        .iris-ring{
+          position:absolute;
+          border-radius:50%;
+          border:1px solid rgba(34,211,238,0.18);
+        }
+        .ring-1{ width:100%; height:100%; }
+        .ring-2{ width:78%; height:78%; border-color:rgba(34,211,238,0.28); }
+        .ring-3{ width:56%; height:56%; border-style:dashed; border-color:rgba(129,140,248,0.35);
+          animation:spin-slow 22s linear infinite; }
+
+        @keyframes spin-slow{ to{ transform:rotate(360deg); } }
+
+        .iris-core{
+          width:34%; height:34%;
+          border-radius:50%;
+          background:radial-gradient(circle at 35% 35%, #7dd3fc, #0891b2 55%, #062b33 100%);
+          box-shadow:0 0 40px rgba(34,211,238,0.55), inset 0 0 20px rgba(0,0,0,0.4);
+          position:relative;
+          z-index:2;
+        }
+
+        .scan-sweep{
+          position:absolute;
+          inset:0;
+          border-radius:50%;
+          overflow:hidden;
+        }
+        .scan-line{
+          position:absolute;
+          left:0; right:0;
+          top:0;
+          height:2px;
+          background:linear-gradient(90deg, transparent, var(--cyan) 45%, var(--cyan) 55%, transparent);
+          box-shadow:0 0 12px 2px rgba(34,211,238,0.7);
+          animation:sweep 2.6s ease-in-out infinite;
+        }
+        @keyframes sweep{
+          0%{ top:6%; opacity:0; }
+          10%{ opacity:1; }
+          50%{ top:94%; opacity:1; }
+          60%{ opacity:0; }
+          100%{ top:94%; opacity:0; }
+        }
+
+        .scan-caption{
+          text-align:center;
+          z-index:2;
+        }
+        .scan-status{
+          font-family:'IBM Plex Mono', monospace;
+          font-size:11px;
+          letter-spacing:0.14em;
+          text-transform:uppercase;
+          color:var(--cyan);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+        }
+        .scan-status::before{
+          content:'';
+          width:6px; height:6px;
+          border-radius:50%;
+          background:var(--cyan);
+          box-shadow:0 0 8px var(--cyan);
+          animation:pulse-dot 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-dot{
+          0%,100%{ opacity:1; transform:scale(1); }
+          50%{ opacity:0.4; transform:scale(0.7); }
+        }
+
+        .copy{
+          position:relative;
+          z-index:2;
+        }
+        .copy h1{
+          font-family:'Space Grotesk', sans-serif;
+          font-weight:600;
+          font-size:26px;
+          line-height:1.35;
+          max-width:420px;
+          margin-bottom:10px;
+        }
+        .copy p{
+          color:var(--text-dim);
+          font-size:14px;
+          max-width:400px;
+          line-height:1.6;
+        }
+
+        .stat-row{
+          position:relative;
+          z-index:2;
+          display:flex;
+          gap:32px;
+          margin-top:28px;
+          padding-top:24px;
+          border-top:1px solid var(--line);
+        }
+        .stat b{
+          font-family:'Space Grotesk', sans-serif;
+          font-size:20px;
+          display:block;
+          color:var(--text);
+        }
+        .stat span{
+          font-size:12px;
+          color:var(--text-faint);
+          letter-spacing:0.02em;
+        }
+
+        /* ===================== RIGHT: FORM PANEL ===================== */
+        .panel-right{
+          flex:1;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          padding:40px;
+          background:var(--bg-deep);
+          position:relative;
+        }
+
+        .form-card{
+          width:100%;
+          max-width:380px;
+        }
+
+        .eyebrow{
+          font-family:'IBM Plex Mono', monospace;
+          font-size:11px;
+          letter-spacing:0.16em;
+          text-transform:uppercase;
+          color:var(--text-faint);
+          margin-bottom:14px;
+          display:flex;
+          align-items:center;
+          gap:10px;
+        }
+        .eyebrow::after{
+          content:'';
+          flex:1;
+          height:1px;
+          background:var(--line);
+        }
+
+        .form-card h2{
+          font-family:'Space Grotesk', sans-serif;
+          font-weight:700;
+          font-size:32px;
+          margin-bottom:8px;
+          letter-spacing:-0.01em;
+        }
+        .form-card .sub{
+          color:var(--text-dim);
+          font-size:14px;
+          margin-bottom:36px;
+        }
+
+        form{ display:flex; flex-direction:column; gap:18px; }
+
+        .field{ display:flex; flex-direction:column; gap:8px; }
+
+        .field label{
+          font-size:12px;
+          font-weight:500;
+          color:var(--text-dim);
+          letter-spacing:0.02em;
+        }
+
+        .input-shell{
+          position:relative;
+          display:flex;
+          align-items:center;
+        }
+
+        .input-shell svg{
+          position:absolute;
+          left:14px;
+          width:16px; height:16px;
+          color:var(--text-faint);
+          pointer-events:none;
+        }
+
+        .input-shell input{
+          width:100%;
+          background:var(--surface);
+          border:1px solid var(--line);
+          border-radius:10px;
+          padding:13px 14px 13px 42px;
+          color:var(--text);
+          font-family:'Inter', sans-serif;
+          font-size:14px;
+          transition:border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+        }
+        .input-shell input::placeholder{ color:var(--text-faint); }
+        .input-shell input:hover{ border-color:#2c3c5e; }
+        .input-shell input:focus{
+          outline:none;
+          border-color:var(--cyan);
+          background:var(--surface-2);
+          box-shadow:0 0 0 3px rgba(34,211,238,0.12);
+        }
+
+        .toggle-pass{
+          position:absolute;
+          right:12px;
+          background:none;
+          border:none;
+          color:var(--text-faint);
+          cursor:pointer;
+          padding:4px;
+          display:flex;
+          border-radius:6px;
+        }
+        .toggle-pass:hover{ color:var(--text-dim); }
+        .toggle-pass svg{ width:16px; height:16px; }
+
+        .row-between{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          font-size:13px;
+          margin-top:-4px;
+        }
+
+        .remember{
+          display:flex;
+          align-items:center;
+          gap:8px;
+          color:var(--text-dim);
+          cursor:pointer;
+          user-select:none;
+        }
+        .remember input{
+          width:15px; height:15px;
+          accent-color:var(--cyan);
+          cursor:pointer;
+        }
+
+        a.forgot{
+          color:var(--cyan-dim);
+          text-decoration:none;
+          font-weight:500;
+        }
+        a.forgot:hover{ color:var(--cyan); text-decoration:underline; }
+
+        .btn-login{
+          margin-top:10px;
+          position:relative;
+          border:none;
+          border-radius:10px;
+          padding:14px 20px;
+          background:linear-gradient(135deg, var(--cyan), #38bdf8 45%, var(--violet));
+          color:#04141a;
+          font-family:'Space Grotesk', sans-serif;
+          font-weight:600;
+          font-size:15px;
+          letter-spacing:0.01em;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          box-shadow:0 8px 24px -8px rgba(34,211,238,0.5);
+          transition:transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        }
+        .btn-login:hover{ filter:brightness(1.06); transform:translateY(-1px); box-shadow:0 12px 28px -8px rgba(34,211,238,0.6); }
+        .btn-login:active{ transform:translateY(0px) scale(0.99); }
+        .btn-login:focus-visible{ outline:2px solid var(--cyan); outline-offset:3px; }
+        .btn-login svg{ width:16px; height:16px; }
+
+        .divider{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          margin:28px 0 20px;
+          color:var(--text-faint);
+          font-size:12px;
+        }
+        .divider::before, .divider::after{
+          content:'';
+          flex:1;
+          height:1px;
+          background:var(--line);
+        }
+
+        .alt-access{
+          display:flex;
+          gap:12px;
+          padding:14px 16px;
+          background:var(--surface);
+          border:1px solid var(--line);
+          border-radius:10px;
+          align-items:flex-start;
+        }
+        .alt-access svg{ width:18px; height:18px; color:var(--violet); flex-shrink:0; margin-top:1px; }
+        .alt-access p{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
+        .alt-access b{ color:var(--text); font-weight:600; }
+
+        .footnote{
+          margin-top:28px;
+          text-align:center;
+          font-size:12px;
+          color:var(--text-faint);
+        }
+
+        @media (max-width: 880px){
+          .wrap{ flex-direction:column; height:auto; overflow:auto; }
+          body{ overflow:auto; }
+          .panel-left{
+            flex:none;
+            padding:36px 28px;
+            border-right:none;
+            border-bottom:1px solid var(--line);
+          }
+          .scan-stage{ gap:18px; padding:20px 0; }
+          .iris-holder{ width:170px; height:170px; }
+          .copy h1{ font-size:20px; }
+          .stat-row{ margin-top:20px; padding-top:18px; gap:22px; }
+          .panel-right{ padding:32px 24px 56px; }
         }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>Teacher Login</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
+<div class="wrap">
+
+    <!-- ============ LEFT PANEL ============ -->
+    <div class="panel-left">
+        <div class="grid-overlay"></div>
+
+        <div class="brand">
+            <div class="brand-mark">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="3.2" fill="#04141a"/>
+                    <path d="M2 12C4.5 7 8 4.5 12 4.5S19.5 7 22 12C19.5 17 16 19.5 12 19.5S4.5 17 2 12Z" stroke="#04141a" stroke-width="1.6"/>
+                </svg>
+            </div>
+            <div class="brand-name">Iris<span>Attend</span></div>
+        </div>
+
+        <div class="scan-stage">
+            <div class="iris-holder">
+                <div class="iris-ring ring-1"></div>
+                <div class="iris-ring ring-2"></div>
+                <div class="iris-ring ring-3"></div>
+                <div class="iris-core"></div>
+                <div class="scan-sweep"><div class="scan-line"></div></div>
+            </div>
+            <div class="scan-caption">
+                <div class="scan-status">Verifying identity</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="copy">
+                <h1>Attendance, verified at a glance.</h1>
+                <p>Sign in to mark, review, and export attendance secured by iris authentication — no passwords to guess, no proxies to worry about.</p>
+            </div>
+            <div class="stat-row">
+                <div class="stat"><b>99.6%</b><span>Match accuracy</span></div>
+                <div class="stat"><b>&lt;1.2s</b><span>Scan time</span></div>
+                <div class="stat"><b>0</b><span>Proxy entries</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ RIGHT PANEL ============ -->
+    <div class="panel-right">
+        <div class="form-card">
+
+            <div class="eyebrow">Staff access</div>
+            <h2>Teacher Login</h2>
+            <p class="sub">Enter your credentials to open your attendance dashboard.</p>
+
+            <form id="loginForm">
+
+                <div class="field">
+                    <label for="username">Username</label>
+                    <div class="input-shell">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input type="text" id="username" name="username" placeholder="e.g. j.suresh" autocomplete="username" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-shell">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+                        <button type="button" class="toggle-pass" id="togglePass" aria-label="Show password">
+                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row-between">
+                    <label class="remember">
+                        <input type="checkbox" name="remember">
+                        Keep me signed in
+                    </label>
+                    <a href="/teacher/forgot-password" class="forgot">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Log in to dashboard
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>
+                </button>
+            </form>
+
+            <div class="divider">or</div>
+
+            <div class="alt-access">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2.5 2.5"/></svg>
+                <p><b>Iris kiosk sign-in</b> is available at the staff room terminal — no username needed there, just look at the scanner.</p>
+            </div>
+
+            <p class="footnote">Having trouble logging in? Contact the admin office at ext. 204.</p>
+        </div>
+    </div>
+
 </div>
+<script>
+    const form = document.getElementById('loginForm');
+
+    form.addEventListener('submit', async function(event) {
+
+        event.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        const btn = form.querySelector('.btn-login');
+        btn.style.opacity = '0.75';
+        btn.disabled = true;
+
+        try {
+
+            const res = await fetch("/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+
+                localStorage.setItem("loggedIn", "true");
+
+                window.location.href = "home.html";
+
+            } else {
+
+                alert("Invalid credentials");
+
+            }
+
+        } catch (error) {
+
+            console.error("Login failed:", error);
+            alert("Could not connect to the server.");
+
+        } finally {
+
+            btn.style.opacity = '1';
+            btn.disabled = false;
+
+        }
+    });
+</script>
+
+</body>
+</html>
+
 <script>
     async function login() {
 
